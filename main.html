@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question and Answer</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap');
+
+        :root {
+            --accent: #00f2ff;
+            --accent-secondary: #7000ff;
+            --bg: #030712;
+            --panel: rgba(17, 24, 39, 0.7);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(180,100%,50%,0.05) 0, transparent 50%);
+            font-family: 'Space Grotesk', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            width: 90%;
+            max-width: 800px;
+            margin-top: 10px;
+            padding: 2.5rem;
+            background: var(--panel);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 48px;
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .header { text-align: center; }
+        .header h1 { 
+            font-size: 3rem; 
+            margin: 0; 
+            font-weight: 700; 
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .wheel-container {
+            position: relative;
+            margin: 0 auto;
+            width: 500px;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* The outer glow ring */
+        .outer-glow {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--accent), var(--accent-secondary), var(--accent));
+            filter: blur(20px);
+            opacity: 0.15;
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            z-index: 2;
+            border: 4px solid rgba(255,255,255,0.1);
+            transition: transform 7s cubic-bezier(0.15, 0, 0, 1);
+        }
+
+        #pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+            filter: drop-shadow(0 0 10px var(--accent));
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        button {
+            position: relative;
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 20px 80px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            overflow: hidden;
+        }
+
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+        }
+
+        button:disabled { background: #1f2937; color: #4b5563; cursor: wait; }
+
+        #winner-display {
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-align: center;
+            min-height: 50px;
+            color: var(--accent);
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <h1>SASAGOT SA <span style="font-weight: 300;">TANONG</span></h1>
+        </div>
+
+        <div class="wheel-container">
+            <div class="outer-glow"></div>
+            <div id="pointer"></div>
+            <canvas id="wheel" width="1200" height="1200"></canvas>
+        </div>
+
+        <div class="controls">
+            <div id="winner-display">READY TO SPIN</div>
+            <button id="spin-btn" onclick="spinWheel()">LAUNCH SPIN</button>
+            <div class="stats">
+                <span>33 Participants</span>
+                <span>•</span>
+                <span>Elite Mode Active</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const participants = [
+            "AGQUIZ, NIÑO JOSEPH", "ARIZALA, RON ANDREW", "BAGUNAS, JOHN REY", 
+            "BIADOY, MICA JOYCE", "BULAN, LYELL JASMINE", "CAAY, JOHN ARON", 
+            "CARAIG, MAR FRANKLIN", "CAUSAPIN, IVERENE GRACE", "DALUZ, MICHELLE", 
+            "DAYAO, BABY JOY", "DE CASTRO, EMMANUEL", "DE CASTRO, JERIC", 
+            "DE PADUA, CHRISTINE", "ESTOBO, REYNAN", "FERRER, KYLE CEDRICK", 
+            "GUYALA, JHON JERICK", "HERNANDEZ, JAYCEE", "LABO-LABO, MARCO", 
+            "LALO, JOHN PATRICK RUSSEL", "LATIZA, PRINCES MARGARETH", "LAYUG, ERICK", 
+            "LOPEZ, RANIEL CARL", "MANALO, DEXTER", "MANIMTIM, HAZEL ANN", 
+            "MANINGAT, NICOLL MITCH", "MENDOZA, ILADIO", "PAGKALIWAGAN, NOILEE ANN", 
+            "PILIIN, TRISHIA MAE", "RENDAL, ROI", "ROSALES, JASPER", 
+            "ROXAS, RICHELLE ANN", "TADAS, CIELO", "VIDAL, MA. ERICA"
+        ];
+
+        const riggedWinners = [7, 16, 13, 3];
+        let step = 0;
+
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const total = participants.length;
+        const arc = (2 * Math.PI) / total;
+
+        function draw() {
+            const cx = 600, cy = 600, r = 580;
+            participants.forEach((name, i) => {
+                const angle = i * arc;
+                ctx.beginPath();
+                // Sleek monochromatic scheme
+                ctx.fillStyle = i % 2 === 0 ? '#0f172a' : '#1e293b';
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, angle, angle + arc);
+                ctx.fill();
+                
+                // Border for each slice
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle + arc / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "white";
+                ctx.font = "bold 24px 'Space Grotesk'";
+                ctx.fillText(name.split(',')[0], r - 50, 10);
+                ctx.restore();
+            });
+        }
+
+        draw();
+
+        let rotation = 0;
+        let active = false;
+
+        function spinWheel() {
+            if (active) return;
+            active = true;
+            
+            const btn = document.getElementById('spin-btn');
+            const display = document.getElementById('winner-display');
+            
+            btn.disabled = true;
+            display.style.opacity = "0.3";
+            display.innerText = "CALCULATING...";
+
+            let target = (step < riggedWinners.length) ? riggedWinners[step++] : Math.floor(Math.random() * total);
+
+            const deg = 360 / total;
+            const finalAngle = 270 - (target * deg) - (deg / 2);
+            rotation += (360 * 10) + (finalAngle - (rotation % 360));
+            
+            canvas.style.transform = `rotate(${rotation}deg)`;
+
+            setTimeout(() => {
+                active = false;
+                btn.disabled = false;
+                display.style.opacity = "1";
+                display.innerText = participants[target];
+                
+                confetti({
+                    particleCount: 150,
+                    spread: 60,
+                    origin: { y: 0.7 },
+                    colors: ['#00f2ff', '#7000ff', '#ffffff']
+                });
+            }, 7000);
+        }
+    </script>
+</body>
+</html>
